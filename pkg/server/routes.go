@@ -12,5 +12,6 @@ func setupRoutes(cfg prometheus.Config) *mux.Router {
 	r := mux.NewRouter()
 	r.HandleFunc("/api/status", handlers.Status)
 	r.HandleFunc("/api/metrics/cpu", h.GetCPUMetrics)
+	r.HandleFunc("/api/dataset/instancetype/{instanceType}", h.GetInstanceTypeData)
 	return r
 }
