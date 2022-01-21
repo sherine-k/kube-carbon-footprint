@@ -65,7 +65,7 @@ func NewClient(cfg Config) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) GetCPUMetrics() (model.Matrix, error) {
+func (c *Client) executePrometheusQuery(query string) (model.Matrix, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), c.cfg.Timeout)
 	defer cancel()
 	r := v1.Range{
@@ -73,7 +73,6 @@ func (c *Client) GetCPUMetrics() (model.Matrix, error) {
 		End:   time.Now(),
 		Step:  time.Minute,
 	}
-	query := "(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate / on(node) group_left() machine_cpu_cores) * 100"
 	result, warnings, err := c.v1api.QueryRange(ctx, query, r)
 	if err != nil {
 		return nil, err
@@ -85,4 +84,14 @@ func (c *Client) GetCPUMetrics() (model.Matrix, error) {
 		return result.(model.Matrix), nil
 	}
 	return nil, fmt.Errorf("invalid query, matrix expected: %s", query)
+}
+
+func (c *Client) GetCPUAvgByPod(pod string, namespace string) (model.Matrix, error) {
+	query := fmt.Sprintf("(sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate{pod='%s', namespace='%s'}) by (namespace,node,pod) / on(node) group_left() machine_cpu_cores) * 100", pod, namespace)
+	return c.executePrometheusQuery(query)
+}
+
+func (c *Client) GetCPUMetrics() (model.Matrix, error) {
+	query := "(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate / on(node) group_left() machine_cpu_cores) * 100"
+	return c.executePrometheusQuery(query)
 }

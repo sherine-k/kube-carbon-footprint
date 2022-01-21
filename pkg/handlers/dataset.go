@@ -19,3 +19,16 @@ func (h *Handlers) GetInstanceTypeData(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, instance)
 }
+
+func (h *Handlers) GetRegionData(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	regionName := params["region"]
+
+	region := h.dataset.FindRegion(regionName)
+	if region == nil {
+		writeError(w, http.StatusNotFound, fmt.Sprintf("Region '%s' not found in dataset", regionName))
+		return
+	}
+
+	writeJSON(w, http.StatusOK, region)
+}
