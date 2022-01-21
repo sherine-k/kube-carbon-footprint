@@ -8,6 +8,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/sherine-k/kube-carbon-footprint/pkg/kube"
 	"github.com/sherine-k/kube-carbon-footprint/pkg/prometheus"
 	"github.com/sherine-k/kube-carbon-footprint/pkg/server"
 )
@@ -22,6 +23,7 @@ var (
 	promToken    = flag.String("prom-token", "", "Bearer token for Prometheus")
 	promInsecure = flag.Bool("prom-insecure", false, "TLS skip verify")
 	promTimeout  = flag.Duration("prom-timeout", 10*time.Second, "Timeout for Prometheus client calls")
+	kcPathPtr    = flag.String("kube", "", "absolute path to a kubeconfig file for kube client configuration")
 	logLevel     = flag.String("loglevel", "info", "log level")
 	versionFlag  = flag.Bool("v", false, "print version")
 	appVersion   = fmt.Sprintf("%s %s", app, version)
@@ -44,6 +46,15 @@ func main() {
 	log.SetLevel(lvl)
 	log.Infof("Starting %s at log level %s", appVersion, *logLevel)
 
+	var kcPath string
+	if kcPathPtr != nil {
+		kcPath = *kcPathPtr
+	}
+	kubeClient, err := kube.LoadKubeClient(kcPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	server.Start(server.Config{
 		Port:           *port,
 		CertFile:       *cert,
@@ -53,5 +64,5 @@ func main() {
 		Timeout:            *promTimeout,
 		Token:              *promToken,
 		InsecureSkipVerify: *promInsecure,
-	})
+	}, kubeClient)
 }

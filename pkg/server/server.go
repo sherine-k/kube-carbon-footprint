@@ -8,6 +8,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/sherine-k/kube-carbon-footprint/pkg/kube"
 	"github.com/sherine-k/kube-carbon-footprint/pkg/prometheus"
 )
 
@@ -19,8 +20,8 @@ type Config struct {
 	PrivateKeyFile string
 }
 
-func Start(cfg Config, promCfg prometheus.Config) {
-	router := setupRoutes(promCfg)
+func Start(cfg Config, promCfg prometheus.Config, kubeClient *kube.Client) {
+	router := setupRoutes(promCfg, kubeClient)
 
 	// Clients must use TLS 1.2 or higher
 	tlsConfig := &tls.Config{

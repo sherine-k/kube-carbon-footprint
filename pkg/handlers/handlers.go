@@ -7,6 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/sherine-k/kube-carbon-footprint/pkg/dataset"
+	"github.com/sherine-k/kube-carbon-footprint/pkg/kube"
 	"github.com/sherine-k/kube-carbon-footprint/pkg/prometheus"
 )
 
@@ -14,10 +15,11 @@ var hlog = logrus.WithField("module", "handler")
 
 type Handlers struct {
 	promConfig prometheus.Config
+	kubeClient *kube.Client
 	dataset    *dataset.Dataset
 }
 
-func NewHandlers(promConfig prometheus.Config) *Handlers {
+func NewHandlers(promConfig prometheus.Config, kubeClient *kube.Client) *Handlers {
 	ds, err := dataset.Load()
 	if err != nil {
 		hlog.Errorf("Cannot load dataset: %v", err)
@@ -25,6 +27,7 @@ func NewHandlers(promConfig prometheus.Config) *Handlers {
 	}
 	return &Handlers{
 		promConfig: promConfig,
+		kubeClient: kubeClient,
 		dataset:    ds,
 	}
 }
