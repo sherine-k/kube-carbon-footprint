@@ -86,7 +86,7 @@ func (c *Client) executePrometheusQuery(query string) (model.Matrix, error) {
 	return nil, fmt.Errorf("invalid query, matrix expected: %s", query)
 }
 
-func (c *Client) GetCPUAvgByPod(pod string, namespace string) (model.Matrix, error) {
+func (c *Client) GetCPUByPod(pod string, namespace string) (model.Matrix, error) {
 	query := fmt.Sprintf("(sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate{pod='%s', namespace='%s'}) by (namespace,node,pod) / on(node) group_left() machine_cpu_cores) * 100", pod, namespace)
 	return c.executePrometheusQuery(query)
 }

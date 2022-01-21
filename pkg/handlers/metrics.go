@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/sherine-k/kube-carbon-footprint/pkg/compute"
 	"github.com/sherine-k/kube-carbon-footprint/pkg/prometheus"
 )
 
@@ -29,45 +30,61 @@ func (h *Handlers) GetCarbonFootprint(w http.ResponseWriter, r *http.Request) {
 
 	// collect request parameters
 	parameters := r.URL.Query()
-	regionName := parameters.Get("region")
-	if regionName == "" {
-		writeError(w, http.StatusBadRequest, "missing paramter: region")
-	}
-	// instanceType := parameters.Get("instancetype")
-	// if instanceType == "" {
-	// 	writeError(w, http.StatusBadRequest, "missing paramter: instancetype")
-	// }
+
 	pod := parameters.Get("pod")
 	namespace := parameters.Get("namespace")
 
-	//get PUE and CO2e for region
-	region := h.dataset.FindRegion(regionName)
-	fmt.Printf("%s", region.Name)
-	//get load
-	if pod == "" && namespace == "" {
-		//TODO mais pas du tout
-		h.GetCPUMetrics(w, r)
+	if pod == "" || namespace == "" {
+		message := fmt.Sprintf("Missing parameters: pod=%s, namespace=%s", pod, namespace)
+		hlog.Error(message)
+		writeError(w, http.StatusBadRequest, message)
 		return
-	} else if pod != "" && namespace != "" {
-		client, err := prometheus.NewClient(h.promConfig)
-		if err != nil {
-			message := fmt.Sprintf("Error when creating the prometheus client: %v", err)
-			hlog.Error(message)
-			writeError(w, http.StatusServiceUnavailable, message)
-			return
-		}
-		matrix, err := client.GetCPUAvgByPod(pod, namespace)
-		writeJSON(w, http.StatusOK, matrix)
-		if err != nil {
-			message := fmt.Sprintf("Error when getting CPU metrics for pod %s: %v", pod, err)
-			hlog.Error(message)
-			writeError(w, http.StatusServiceUnavailable, message)
-			return
-		}
+	}
+
+	dcInfo, err := h.kubeClient.GetPodDatacenterInfo(pod, namespace)
+	if err != nil {
+		message := fmt.Sprintf("Error getting datacenter info: %v", err)
+		hlog.Error(message)
+		writeError(w, http.StatusInternalServerError, message)
+		return
+	}
+	//get region data
+	region := h.dataset.FindRegion(dcInfo.Region)
+	if region == nil {
+		message := fmt.Sprintf("Data for region %s not found", dcInfo.Region)
+		hlog.Error(message)
+		writeError(w, http.StatusInternalServerError, message)
+		return
+	}
+
+	//get instancetype data of the underlying node
+	instanceType := h.dataset.FindInstance(dcInfo.InstanceType)
+	if instanceType == nil {
+		message := fmt.Sprintf("Data for instance type  %s not found", dcInfo.InstanceType)
+		hlog.Error(message)
+		writeError(w, http.StatusInternalServerError, message)
+		return
+	}
+
+	//get load
+	client, err := prometheus.NewClient(h.promConfig)
+	if err != nil {
+		message := fmt.Sprintf("Error when creating the prometheus client: %v", err)
+		hlog.Error(message)
+		writeError(w, http.StatusServiceUnavailable, message)
+		return
+	}
+	matrix, err := client.GetCPUByPod(pod, namespace)
+	if err != nil {
+		message := fmt.Sprintf("Error when getting CPU metrics for pod %s: %v", pod, err)
+		hlog.Error(message)
+		writeError(w, http.StatusServiceUnavailable, message)
+		return
 	}
 
 	//compute C footprint
+	cfpMatrix := compute.ComputeCarbonFootprint(matrix, instanceType, region)
 
-	//gCO₂eq = PUE * Power * ZoneCO2e / 1000
+	writeJSON(w, http.StatusOK, cfpMatrix)
 
 }
