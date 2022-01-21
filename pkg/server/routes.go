@@ -4,6 +4,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/sherine-k/kube-carbon-footprint/pkg/handlers"
+	"github.com/sherine-k/kube-carbon-footprint/pkg/kube"
 	"github.com/sherine-k/kube-carbon-footprint/pkg/prometheus"
 )
 
