@@ -5,7 +5,7 @@ import (
 	"github.com/sherine-k/kube-carbon-footprint/pkg/dataset"
 )
 
-func ComputeCarbonFootprint(matrix model.Matrix, instancetype *dataset.Instance, region *dataset.Region) model.Matrix {
+func CarbonFootprint(matrix model.Matrix, instancetype *dataset.Instance, region *dataset.Region) model.Matrix {
 	var carbonFP model.Matrix
 	for _, samplestream := range matrix {
 		aMetric := model.Metric{}

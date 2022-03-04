@@ -83,7 +83,7 @@ func (h *Handlers) GetCarbonFootprint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//compute C footprint
-	cfpMatrix := compute.ComputeCarbonFootprint(matrix, instanceType, region)
+	cfpMatrix := compute.CarbonFootprint(matrix, instanceType, region)
 
 	writeJSON(w, http.StatusOK, cfpMatrix)
 

@@ -21,7 +21,7 @@ func (c *Client) GetPodDatacenterInfo(podName, namespace string) (*DatacenterInf
 		return nil, err
 	}
 	if pod.Spec.NodeName == "" {
-		return nil, fmt.Errorf("No node name set for pod %s [namespace %s]", podName, namespace)
+		return nil, fmt.Errorf("no node name set for pod %s [namespace %s]", podName, namespace)
 	}
 	node, err := c.clientset.CoreV1().Nodes().Get(context.TODO(), pod.Spec.NodeName, metav1.GetOptions{})
 	if err != nil {
