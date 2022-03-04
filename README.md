@@ -20,6 +20,13 @@ Endpoints:
 - Stats per region: `/api/dataset/region/{region}` (e.g. `/api/dataset/region/us-east-1`)
 - Datacenter info for pod: `api/datacenter/namespace/{namespace}/pod/{pod}` (e.g. `api/datacenter/namespace/default/pod/my-pod`)
 
+## Running in cluster
+```bash
+kubectl apply -f test_resources/kcf-role.yaml
+kubectl apply -f test_resources/kcf-deployment.yaml
+```
+PS: what we're missing is a serviceaccount that has permissions to prometheus and the correct prometheus URL
+
 ## License and credits
 
 This software is published under the Apache v2 license (see [LICENSE file](./LICENSE)).

@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"time"
 
@@ -14,19 +15,20 @@ import (
 )
 
 var (
-	version      = "unknown"
-	app          = "kube-carbon-footprint"
-	port         = flag.Int("port", 9000, "server port to listen on (default: 9000)")
-	cert         = flag.String("cert", "", "cert file path to enable TLS (disabled by default)")
-	key          = flag.String("key", "", "private key file path to enable TLS (disabled by default)")
-	promURL      = flag.String("prom", "http://prometheus:9090", "Prometheus URL")
-	promToken    = flag.String("prom-token", "", "Bearer token for Prometheus")
-	promInsecure = flag.Bool("prom-insecure", false, "TLS skip verify")
-	promTimeout  = flag.Duration("prom-timeout", 10*time.Second, "Timeout for Prometheus client calls")
-	kcPathPtr    = flag.String("kube", "", "absolute path to a kubeconfig file for kube client configuration")
-	logLevel     = flag.String("loglevel", "info", "log level")
-	versionFlag  = flag.Bool("v", false, "print version")
-	appVersion   = fmt.Sprintf("%s %s", app, version)
+	version       = "unknown"
+	app           = "kube-carbon-footprint"
+	port          = flag.Int("port", 9000, "server port to listen on (default: 9000)")
+	cert          = flag.String("cert", "", "cert file path to enable TLS (disabled by default)")
+	key           = flag.String("key", "", "private key file path to enable TLS (disabled by default)")
+	promURL       = flag.String("prom", "http://prometheus:9090", "Prometheus URL")
+	promToken     = flag.String("prom-token", "", "Bearer token for Prometheus")
+	promTokenFile = flag.String("prom-token-file", "", "File containing Bearer token for Prometheus")
+	promInsecure  = flag.Bool("prom-insecure", false, "TLS skip verify")
+	promTimeout   = flag.Duration("prom-timeout", 10*time.Second, "Timeout for Prometheus client calls")
+	kcPathPtr     = flag.String("kube", "", "absolute path to a kubeconfig file for kube client configuration")
+	logLevel      = flag.String("loglevel", "info", "log level")
+	versionFlag   = flag.Bool("v", false, "print version")
+	appVersion    = fmt.Sprintf("%s %s", app, version)
 )
 
 func main() {
@@ -45,6 +47,13 @@ func main() {
 	}
 	log.SetLevel(lvl)
 	log.Infof("Starting %s at log level %s", appVersion, *logLevel)
+	token, err := readTokenFile(*promTokenFile)
+	if err != nil {
+		panic("Unable to read token file, or token is empty :" + err.Error())
+	}
+	if token != "" && *promToken == "" {
+		*promToken = token
+	}
 
 	var kcPath string
 	if kcPathPtr != nil {
@@ -65,4 +74,15 @@ func main() {
 		Token:              *promToken,
 		InsecureSkipVerify: *promInsecure,
 	}, kubeClient)
+}
+
+func readTokenFile(tokenFile string) (string, error) {
+	content, err := ioutil.ReadFile(tokenFile)
+	if err != nil {
+		return "", err
+	}
+	if len(content) <= 0 {
+		return "", fmt.Errorf("%s was empty", tokenFile)
+	}
+	return string(content), nil
 }
